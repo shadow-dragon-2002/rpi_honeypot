@@ -1,6 +1,6 @@
 # Raspberry Honey Pot
 
-This is a project that I made to understand honeypots and how to make one myself. The project is using the opencanary daemon. 
+This is a project that I made to understand honeypots and how to make one myself. The project is using the opencanary daemon. Thanks to Bob McKay for his extensive guide on setting up a RPi Honeypot on which this project is made from, which can be found [here](https://bobmckay.com/i-t-support-networking/hardware/create-a-security-honey-pot-with-opencanary-and-a-raspberry-pi-3-updated-2021/ "here").
 
 ### Hardware and Software Used:
 - Raspberry pi 3B V1.2
@@ -90,3 +90,74 @@ Use the following commands to install the required dependecies, then install ope
 
 	sudo apt-get install python3-dev python3-pip python3-virtualenv python3-venv python3-scapy libssl-dev libpcap-dev libffi-dev samba pcapy-ng
 	sudo pip3 install pcapy scapy
+
+#### 5. Opencanary configuration :
+
+run the following command to make a opencanary config file.
+
+	opencanaryd --copyconfig
+
+After that a message saying "A sample config file is ready", after that run the following command to start the opencanary service.
+
+	opencanaryd --start
+
+This should start the opencanary service and should start showing something which shows like a log.
+
+After thats lets change the SSH to a more non-obvious port number so that we can acccess for cofiguration and maintanence when needed. Open "/etc/ssh/sshd_config" with your choice text editor and change the line "Port 22" to something very high number like 65421 and remember it so that you can connect to it later. Save to file and reboot.
+
+Rename the current samba config to keep it as a backup just in case. 
+
+	sudo mv /etc/samba/smb.conf /etc/samba/smb.conf_backup
+
+Now create a new samba config with which resembles a config file of a windows fileserver made with your selected companys devices.
+
+	sudo nano /etc/samba/smb.conf
+
+#### 6. Setting up notifications :
+
+Now to get alerts from the honeypot so that it can be logged and monitored we need to add an email to add a sender email and application password and add a reciever email address. This can be done by adding the following config lines to the "/etc/opencanaryd/opencanary.conf" file.
+
+	"SMTP": {
+	"class": "logging.handlers.SMTPHandler",
+	"mailhost": ["smtp.gmail.com", 587],
+	"fromaddr": "johndoe@gmail.com",
+	"toaddrs" : ["securityalerts@email.com"],
+	"subject" : "OpenCanary Alert at home!",
+	"credentials" : ["sender@gmail.com", "YOURAPPLICATIONPASSWORD"],
+	"secure" : []
+	}
+
+If you want to get instructions on how to get application password of a gmail account you can follow the instructions by google [here](https://support.google.com/mail/answer/185833?hl=en-GB "here").
+Make sure you don't use your main email or any important email just setup a new account for this project.
+
+After saving this check it by either logging into the honeypot or ping it. You should start recieving logs on the reciever email soon.
+
+#### 7. Final setups :
+
+Now we need to make the onpencanary service start on each startup automatically. For that we make a systemd service file. using your prefered text editor or touch make a file like following then edit. I am using nano.
+
+	sudo nano /etc/systemd/system/opencanary.service
+
+Then add the following config to it.
+
+	[Unit]
+	Description=OpenCanary
+	After=syslog.target
+	After=network.target
+	
+	[Service]
+	User=root
+	Restart=always
+	WorkingDirectory=/home/pi/opencanary
+	ExecStart=/home/pi/opencanary/bin/opencanaryd --dev
+	
+	[Install]
+	WantedBy=multi-user.target
+
+After saving that file enabe the service and check it with the following files.
+
+	sudo systemctl enable opencanary.service
+	sudo systemctl start opencanary.service
+	systemctl status opencanary.service
+
+And by this the raspberry pi honeypot should be fully setup. Now you can experminent on with adding more services to it or opening other service ports etc. Just make sure not to make it obvious that its a honeypot, it should be just like a normal server with some bare minimum vulnerabilities to make it look appealing.
