@@ -1,20 +1,20 @@
 # Raspberry Honey Pot
 
-This is a project that I made to understand honeypots and how to make one myself. The project is using the opencanary daemon. Thanks to Bob McKay for his extensive guide on setting up a RPi Honeypot on which this project is made from, which can be found [here](https://bobmckay.com/i-t-support-networking/hardware/create-a-security-honey-pot-with-opencanary-and-a-raspberry-pi-3-updated-2021/ "here").
+This is a project that I made to understand honeypots and how to make one myself. The project uses the opencanary daemon. Thanks to Bob McKay for his extensive guide on setting up an RPi Honeypot based on which this project is made, which can be found [here](https://bobmckay.com/i-t-support-networking/hardware/create-a-security-honey-pot-with-opencanary-and-a-raspberry-pi-3-updated-2021/ "here").
 
 ### Hardware and Software Used:
-- Raspberry pi 3B V1.2
+- Raspberry Pi 3B V1.2
 - 16 GB Micro SD Card
 - Ethernet Cable
 - Raspbian OS Lite x64
 - Opencanary
 
 
-### Installation and Setup:
+### Instructions:
 
 ------------
 #### 1. Installation :
-Download and flash Raspbian OS lite on the micro SD card. The selection of Raspbian lite is purely on the basis that it's being run on a Raspberry Pi so it'll be easier on the processing and won't require a GUI considering it's just a honeypot. I just used the Raspberry Pi imager software given out by the official Raspberry Pi community. 
+Download and flash Raspbian OS lite on the micro SD card. The selection of Raspbian lite is purely because it's being run on a Raspberry Pi so it'll be easier on the processing and won't require a GUI considering it's just a honeypot. I just used the Raspberry Pi imager software given out by the official Raspberry Pi community. 
 
 	https://www.raspberrypi.com/software/
 
@@ -44,16 +44,16 @@ We need to fake the MAC address to do that as it is given out during a network s
 So, in this case, a Synology MAC address starts with "00:11:32", you can use a MAC address generator like [this website](https://miniwebtool.com/mac-address-generator/ "this website") to generate a random MAC address. 
 Select the format to the one which looks like this "MM:MM:MM:SS:SS:SS" and enter 001132 in the prefix section, and make sure it's uppercase.
 
-After that I used the tool macchanger to change the device's MAC address. Install it with the following command.
+After that, I used the tool Macchanger to change the device's MAC address. Install it with the following command.
 
 	sudo apt-get install macchanger
 
-After that we need to make a system service to change the ethernet and wifi MAC address on startup. 
-First use this command to identify the interface names to change mac for. 
+After that, we need to make a system service to change the ethernet and wifi MAC address on startup. 
+First, use this command to identify the interface names to change MAC for. 
 
 	ifconfig
 
-not down the wlan and eth named interfaces. After that create a systemd file using a note editor I use nano here. 
+not down the WLAN and eth named interfaces. After that create a Systemd file using a note editor I use nano here. 
 
 	sudo nano /etc/systemd/system/changemac@.service
 
@@ -74,48 +74,49 @@ Then paste the following script into the file. Make sure to change the MAC addre
 	[Install]
 	WantedBy=multi-user.target
 
-After that enable the the systemd service with the following commands for both network interfaces.
+After that enable the systemd service with the following commands for both network interfaces.
 Change the interface names to the ones you noted beforehand.
 
 	sudo systemctl enable changemac@<ethernet interface>.service
 	sudo systemctl enable changemac@<wlan interface>.service
 
-Then once again reboot, this time the mac addresses of the interfaces so it will probably pick up another IP address so use the scanner method to find the IP and connect again.
+Then once again reboot, this time the MAC addresses of the interfaces so it will probably pick up another IP address so use the scanner method to find the IP and connect again.
 
 ------------
 
 #### 4. Opencanary Installation :
 
-Use the following commands to install the required dependecies, then install opencanary.
+Use the following commands to install the required dependencies, then install Opencanary.
 
 	sudo apt-get install python3-dev python3-pip python3-virtualenv python3-venv python3-scapy libssl-dev libpcap-dev libffi-dev samba pcapy-ng
 	sudo pip3 install pcapy scapy
 
 #### 5. Opencanary configuration :
 
-run the following command to make a opencanary config file.
+run the following command to make an Opencanary config file.
 
 	opencanaryd --copyconfig
 
-After that a message saying "A sample config file is ready", after that run the following command to start the opencanary service.
+After that, a message says "A sample config file is ready" After that run the following command to start the opencanary service.
 
 	opencanaryd --start
 
 This should start the opencanary service and should start showing something which shows like a log.
 
-After thats lets change the SSH to a more non-obvious port number so that we can acccess for cofiguration and maintanence when needed. Open "/etc/ssh/sshd_config" with your choice text editor and change the line "Port 22" to something very high number like 65421 and remember it so that you can connect to it later. Save to file and reboot.
+After that let's change the SSH to a more non-obvious port number so that we can access it for configuration and maintenance when needed. Open "/etc/ssh/sshd_config" with your choice text editor and change the line "Port 22" to something very high number like 65421 and remember it so that you can connect to it later. Save to file and reboot.
 
-Rename the current samba config to keep it as a backup just in case. 
+Rename the current Samba config to keep it as a backup just in case. 
 
 	sudo mv /etc/samba/smb.conf /etc/samba/smb.conf_backup
 
-Now create a new samba config with which resembles a config file of a windows fileserver made with your selected companys devices.
+Now create a new samba config which resembles a config file of a Windows fileserver made with your selected company's devices.
 
 	sudo nano /etc/samba/smb.conf
+------------
 
 #### 6. Setting up notifications :
 
-Now to get alerts from the honeypot so that it can be logged and monitored we need to add an email to add a sender email and application password and add a reciever email address. This can be done by adding the following config lines to the "/etc/opencanaryd/opencanary.conf" file.
+Now to get alerts from the honeypot so that it can be logged and monitored we need to add an email to add a sender email, application password, and a receiver email address. This can be done by adding the following config lines to the "/etc/opencanaryd/opencanary.conf" file.
 
 	"SMTP": {
 	"class": "logging.handlers.SMTPHandler",
@@ -127,14 +128,15 @@ Now to get alerts from the honeypot so that it can be logged and monitored we ne
 	"secure" : []
 	}
 
-If you want to get instructions on how to get application password of a gmail account you can follow the instructions by google [here](https://support.google.com/mail/answer/185833?hl=en-GB "here").
-Make sure you don't use your main email or any important email just setup a new account for this project.
+If you want to get instructions on how to get the application password of a Gmail account you can follow the instructions by Google [here](https://support.google.com/mail/answer/185833?hl=en-GB "here").
+Make sure you don't use your main email or any important email just set up a new account for this project.
 
-After saving this check it by either logging into the honeypot or ping it. You should start recieving logs on the reciever email soon.
+After saving this check it by either logging into the honeypot or ping it. You should start receiving logs on the receiver email soon.
+------------
 
 #### 7. Final setups :
 
-Now we need to make the onpencanary service start on each startup automatically. For that we make a systemd service file. using your prefered text editor or touch make a file like following then edit. I am using nano.
+Now we need to make the Onpencanary service start on each startup automatically. For that, we make a systemd service file. using your preferred text editor or Touch make a file like the following then edit it. I am using Nano.
 
 	sudo nano /etc/systemd/system/opencanary.service
 
@@ -154,10 +156,16 @@ Then add the following config to it.
 	[Install]
 	WantedBy=multi-user.target
 
-After saving that file enabe the service and check it with the following files.
+After saving that file enable the service and check it with the following files.
 
 	sudo systemctl enable opencanary.service
 	sudo systemctl start opencanary.service
 	systemctl status opencanary.service
+------------
 
-And by this the raspberry pi honeypot should be fully setup. Now you can experminent on with adding more services to it or opening other service ports etc. Just make sure not to make it obvious that its a honeypot, it should be just like a normal server with some bare minimum vulnerabilities to make it look appealing.
+After all this sprinkle some files and artifacts in the honeypot to make the attacker interested in the pot for longer and record a pattern. I just added some basic files and images.
+
+![Screenshot 2023-10-24 at 6 07 00 PM](https://github.com/shadow-dragon-2002/rpi_honeypot/assets/73079262/b9283708-ad55-452e-8e22-c692e0fd6f6f)
+
+
+And by this, the Raspberry Pi honeypot should be fully set up. Now you can experiment with adding more services to it or opening other service ports etc. Just make sure not to make it obvious that it's a honeypot, it should be just like a normal server with some bare minimum vulnerabilities to make it look appealing.
